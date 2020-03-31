@@ -1,0 +1,41 @@
+version: '3.3'
+services:
+    mssql:
+        environment:
+            - ACCEPT_EULA=Y
+            - SA_PASSWORD=yourStrongPassword---1
+            - MSSQL_PID=Express
+        volumes:
+            - 'dbData2:/var/opt/mssql'
+        networks:
+            - jira
+        image: mcr.microsoft.com/mssql/server:2019-CU4-ubuntu-16.04
+        container_name: mssql
+        hostname: mssql
+    jira-software:
+        volumes:
+            - 'jiraVolume:/var/atlassian/application-data/jira'
+        container_name: jira
+        networks:
+            - jira
+        ports:
+            - '8080:8080'
+        depends_on:
+            - 'mssql'
+        image: atlassian/jira-software
+    initScript:
+        networks:
+            - jira
+        depends_on:
+            - 'mssql'
+        environment:
+            - ACCEPT_EULA=Y
+            - MSSQL_PID=Express
+        image: mcr.microsoft.com/mssql/server:2019-CU4-ubuntu-16.04
+        command: bash -c "sleep 10; /opt/mssql-tools/bin/sqlcmd -S mssql -U SA -P yourStrongPassword---1 -Q 'CREATE DATABASE jira'"
+volumes:
+  jiraVolume:
+  dbData2:
+
+networks:
+  jira:
